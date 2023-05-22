@@ -39,14 +39,16 @@
                             </div>
                             <div class="product__details__price">${{$item->price}}</div>
                             <p>{{$item->description}}</p>
-                            <div class="product__details__quantity">
-                                <div class="quantity">
-                                    <div class="pro-qty">
-                                        <input type="text" value="1">
+                            <form method="get" action="{{url("/add-to-cart", ["product"=>$item->id])}}">
+                                <div class="product__details__quantity">
+                                    <div class="quantity">
+                                        <div class="pro-qty">
+                                            <input type="text" value="1" name="qty">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <a href="#" class="primary-btn">ADD TO CARD</a>
+                                <button type="submit" class="primary-btn">ADD TO CARD</button>
+                            </form>
                             <a href="#" class="heart-icon"><span class="icon_heart_alt"></span></a>
                             <ul>
                                 <li><b>Availability</b> <span>In Stock</span></li>

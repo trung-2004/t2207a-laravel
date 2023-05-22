@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\DB;
+use Srmklive\PayPal\Services\PayPal as PayPalClient;
 class WebController extends Controller
 {
     public function home()
@@ -63,7 +65,7 @@ class WebController extends Controller
         ]);
     }
 
-    public function product_detail(Product $product)
+    public function product_detail(Product $product, Request $request)
     {
         //$id = $request->get("id");
         $product = Product::where("slug", $product->slug)->get();
@@ -76,8 +78,13 @@ class WebController extends Controller
 
     public function cart() {
         $products = session()->has("cart") ? session()->get("cart") : [];
+        $totals = 0;
+        foreach ($products as $item){
+            $totals += $item->price * $item->buy_qty;
+        }
         return view("cart", [
-            "products" => $products
+            "products" => $products,
+            "totals" => $totals
         ]);
     }
 
@@ -91,12 +98,126 @@ class WebController extends Controller
                 return redirect()->to("/cart");
             }
         }
-        foreach ($cart as $item){
-            $total += $item->price * $item->buy_qty;
-        }
-        $product->buy_qty = 1;
+
+        $product->buy_qty = $qty;
         $cart[] = $product;
         session(["cart"=>$cart]);
         return redirect()->to("/cart");
+    }
+    public function checkOut() {
+        $products = session()->has("cart") ? session()->get("cart") : [];
+        $totals = 0;
+        foreach ($products as $item){
+            $totals += $item->price * $item->buy_qty;
+        }
+        return view("check-out", [
+            "products" => $products,
+            "total" => $totals
+        ]);
+
+    }
+
+    public function placeOrder(Request $request) {
+        //kiểm tra validate phia backend(khoong thoa man se di ve giao dien cu)
+
+        $request->validate([// mảng các quy tắt
+            "firstname" => "required",
+            "lastname" => "required",
+            "address" => "required",
+            "phone" => "required|min:10|max:12",// ít nhất 10 và nhiều nhất 12
+            "email" => "required",
+            "payment_method" => "required"
+        ], [// mảng các thông điệp
+            "required" => "Vui lòng điền đầy đủ thông tin",
+            "min" => "Phải nhập tối thiểu :min",// min lấy từ trên xuống
+            "max" => "Nhập giá trị không vượt quá :max",
+        ]);
+
+        $products = session()->has("cart") ? session()->get("cart") : [];
+        $total = 0;
+        foreach ($products as $item){
+            $total += $item->price * $item->buy_qty;
+        }
+        $order = Order::create([
+            "firstname"=>$request->get("firstname"),
+            "lastname"=>$request->get("lastname"),
+            "country"=>$request->get("country"),
+            "address"=>$request->get("address"),
+            "city"=>$request->get("city"),
+            "state"=>$request->get("state"),
+            "postcode"=>$request->get("postcode"),
+            "phone"=>$request->get("phone"),
+            "email"=>$request->get("email"),
+            "total"=>$total,
+            "payment_method"=>$request->get("payment_method"),
+            //"is_paid"=>false,
+            //"satus"=>0,
+        ]);
+        foreach ($products as $item){
+            DB::table("order_products")->insert([
+                "order_id"=>$order->id,
+                "product_id"=>$item->id,
+                "buy_qty"=>$item->buy_qty,
+                "price"=>$item->price
+            ]);
+        }
+        // thanh toan bang paypal
+        if($order->payment_method == "PAYPAL") {
+            $provider = new PayPalClient;
+            $provider->setApiCredentials(config('paypal'));
+
+            $paypalToken = $provider->getAccessToken();
+
+            $response = $provider->createOrder([
+                "intent" => "CAPTURE",
+                "application_context" => [
+                    "return_url" => route('successTransaction', ["order" => $order->id]),
+                    "cancel_url" => route('cancelTransaction', ["order" => $order->id]),
+                ],
+                "purchase_units" => [
+                    0 => [
+                        "amount" => [
+                            "currency_code" => "USD",
+                            "value" => number_format($total, 2, ".", "")
+                        ]
+                    ]
+                ]
+            ]);
+
+            if (isset($response['id']) && $response['id'] != null) {
+
+                // redirect to approve href
+                foreach ($response['links'] as $links) {
+                    if ($links['rel'] == 'approve') {
+                        return redirect()->away($links['href']);
+                    }
+                }
+
+            }
+        }else if($order->payment_method == "VNPAY"){
+            // thanh toan = vnpay
+        }
+        // end
+        return redirect()->to("/thank-you/".$order->id);
+    }
+    public function thankYou(Order $order) {
+        $products = session()->has("cart") ? session()->get("cart") : [];
+        $totals = 0;
+        foreach ($products as $item){
+            $totals += $item->price * $item->buy_qty;
+        }
+        return view("invoice", [
+            "db" => DB::table("order_products")->where("order_id", $order->id)->get(),
+            "total" => $totals
+        ]);
+    }
+
+    public function successTransaction(Order $order, Request $request) {
+        $order->update(["is_paid"=>true,"satus"=>1]);// đã thanh toán, trạng thái về xác nhận
+        return redirect()->to("/thank-you/".$order->id);
+    }
+
+    public function cancelTransaction(Request $request) {
+        return "error";
     }
 }

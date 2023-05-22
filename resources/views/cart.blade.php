@@ -75,13 +75,12 @@
                             <ul>
                                 <li>Subtotal
                                     <span>
-                                        @foreach($products as $c)
-                                            {{ $c->price * $c->buy_qty}}
-                                        @endforeach
-                                    </span></li>
-                                <li>Total <span>$454.98</span></li>
+                                        ${{$totals}}
+                                    </span>
+                                </li>
+                                <li>Total <span>${{$totals}}</span></li>
                             </ul>
-                            <a href="#" class="primary-btn">PROCEED TO CHECKOUT</a>
+                            <a href="{{url("/check-out")}}" class="primary-btn">PROCEED TO CHECKOUT</a>
                         </div>
                     </div>
                 </div>
