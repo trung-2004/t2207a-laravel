@@ -34,7 +34,6 @@
                         </div>
                     </div>
                     @include('html.shop.grid')
-
                 </div>
             </div>
         </div>

@@ -28,7 +28,16 @@
                             </ul>
                         </div>
                         <div class="header__top__right__auth">
-                            <a href="#"><i class="fa fa-user"></i> Login</a>
+                            @guest()
+                                <a href="{{url("/login")}}"><i class="fa fa-user"></i> Login</a>
+                            @endguest
+                            @auth()
+                                <a href="#"><i class="fa fa-user"></i> {{auth()->user()->name}}</a>
+                                <form action="{{route("logout")}}" method="post">
+                                    @csrf
+                                    <button type="submit"><i class="fa fa-arrow-right"></i></button>
+                                </form>
+                            @endauth
                         </div>
                     </div>
                 </div>

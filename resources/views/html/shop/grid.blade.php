@@ -4,7 +4,7 @@
             <div class="product__item">
                 <div class="product__item__pic set-bg" data-setbg="{{$item->thumbnail}}">
                     <ul class="product__item__pic__hover">
-                        <li><a href="#"><i class="fa fa-heart"></i></a></li>
+                        <li><a href="{{url("/add-to-favourite", ["product"=>$item->id])}}"><i class="fa fa-heart"></i></a></li>
                         <li><a href="#"><i class="fa fa-retweet"></i></a></li>
                         <li><a href="{{url("/add-to-cart", ["product"=>$item->id])}}"><i class="fa fa-shopping-cart"></i></a></li>
                     </ul>

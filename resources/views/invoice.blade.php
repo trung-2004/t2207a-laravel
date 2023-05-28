@@ -35,12 +35,12 @@
                                 <td class="font-weight-bold">Price</td>
                                 <td class="font-weight-bold text-center">Total</td>
                             </tr>
-                            @foreach($db as $item)
+                            @foreach($order->products as $item)
                                 <tr class="content">
                                     <td>{{$item->order_id}}</td>
-                                    <td>{{$item->buy_qty}}</td>
-                                    <td>${{$item->price}}</td>
-                                    <td class="text-center">${{$item->price*$item->buy_qty}}</td>
+                                    <td>{{$item->pivot->buy_qty}}</td>
+                                    <td>${{$item->pivot->price}}</td>
+                                    <td class="text-center">${{$item->pivot->price*$item->pivot->buy_qty}}</td>
                                 </tr>
                             @endforeach
                             </tbody>

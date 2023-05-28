@@ -1,18 +1,17 @@
 @extends("layouts.layoutace")
 @section("name")
-    Search: {{$product[0]->name}}
+    Search: {{$product->name}}
 @endsection
 @section("main")
     <!-- Product Details Section Begin -->
     <section class="product-details spad">
         <div class="container">
-            @foreach($product as $item)
                 <div class="row">
                     <div class="col-lg-6 col-md-6">
                         <div class="product__details__pic">
                             <div class="product__details__pic__item">
                                 <img class="product__details__pic__item--large"
-                                     src="{{$item->thumbnail}}" alt="">
+                                     src="{{$product->thumbnail}}" alt="">
                             </div>
                             {{--<div class="product__details__pic__slider owl-carousel">
                                 <img data-imgbigurl="ace/img/product/details/product-details-2.jpg"
@@ -28,7 +27,8 @@
                     </div>
                     <div class="col-lg-6 col-md-6">
                         <div class="product__details__text">
-                            <h3>{{$item->name}}</h3>
+                            <h3>{{$product->name}}</h3>
+                            <h4>Category: {{$product->category->name}}</h4>
                             <div class="product__details__rating">
                                 <i class="fa fa-star"></i>
                                 <i class="fa fa-star"></i>
@@ -37,13 +37,13 @@
                                 <i class="fa fa-star-half-o"></i>
                                 <span>(18 reviews)</span>
                             </div>
-                            <div class="product__details__price">${{$item->price}}</div>
-                            <p>{{$item->description}}</p>
-                            <form method="get" action="{{url("/add-to-cart", ["product"=>$item->id])}}">
+                            <div class="product__details__price">${{$product->price}}</div>
+                            <p>{{$product->description}}</p>
+                            <form method="get" action="{{url("/add-to-cart",["product"=>$product->id])}}">
                                 <div class="product__details__quantity">
                                     <div class="quantity">
                                         <div class="pro-qty">
-                                            <input type="text" value="1" name="qty">
+                                            <input type="text" max="{{$product->quantity}}" value="1" name="qty">
                                         </div>
                                     </div>
                                 </div>
@@ -85,7 +85,7 @@
                                 <div class="tab-pane active" id="tabs-1" role="tabpanel">
                                     <div class="product__details__tab__desc">
                                         <h6>Products Infomation</h6>
-                                        <p>{{$item->description}}</p>
+                                        <p>{{$product->description}}</p>
                                     </div>
                                 </div>
                                 <div class="tab-pane" id="tabs-2" role="tabpanel">
@@ -129,7 +129,7 @@
                         </div>
                     </div>
                 </div>
-            @endforeach
+
         </div>
     </section>
     <!-- Product Details Section End -->

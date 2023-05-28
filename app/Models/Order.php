@@ -24,4 +24,9 @@ class Order extends Model
         "is_paid",
         "status"
     ];
+    // các sp nằm trong đơn
+    public function products(){
+        // mqh n-n
+        return $this->belongsToMany(Product::class, "order_products")->withPivot("buy_qty", "price");
+    }
 }

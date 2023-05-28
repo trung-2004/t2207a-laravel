@@ -19,4 +19,14 @@ class Product extends Model
         "description",
         "category_id"
     ];
+    // các ơn hàng có sản phẩm
+    public function orders() {
+        // mqh n-n
+        return $this->belongsToMany(Order::class, "order_products")->withPivot("buy_qty", "price");
+    }
+
+    public function category() {
+        // đk: khóa ngoại đặt ở bảng mình
+        return $this->belongsTo(Category::class);
+    }
 }

@@ -35,6 +35,22 @@ Route::post("/check-out", [\App\Http\Controllers\WebController::class, "placeOrd
 
 Route::get("/thank-you/{order}", [\App\Http\Controllers\WebController::class, "thankYou"]);
 
+Route::get("/add-to-favourite/{product}", [\App\Http\Controllers\WebController::class, "addToFavourite"]);
+
+Route::get("/favourite", [\App\Http\Controllers\WebController::class, "favourite"]);
+
+// 2 cái này dùng cho paypal
 Route::get('/success-transaction/{order}', [\App\Http\Controllers\WebController::class, 'successTransaction'])->name('successTransaction');
 
 Route::get('/cancel-transaction/{order}', [\App\Http\Controllers\WebController::class, 'cancelTransaction'])->name('cancelTransaction');
+//
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+// admin
+Route::get("/admin", [\App\Http\Controllers\AdminController::class, "admin"])->middleware(["auth"]);// middleware: phải đăng nhập thì ms vào đc
+
+Route::get("/admin/orders", [\App\Http\Controllers\AdminController::class, "orders"])->middleware(["auth"]);
+
+Route::get("/admin/invoice/{order}", [\App\Http\Controllers\AdminController::class, "invoice"])->middleware(["auth"]);

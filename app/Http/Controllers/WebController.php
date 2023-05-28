@@ -8,6 +8,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
+
 class WebController extends Controller
 {
     public function home()
@@ -51,7 +52,7 @@ class WebController extends Controller
     {
         // $category = Category::find($id);
         // if(category == null){
-            // return abort
+        // return abort
         // }
         //$category = Category::findOrFail($id);// dùng để nếu như ko tìm thấy id thì báo trang 404
 
@@ -65,21 +66,21 @@ class WebController extends Controller
         ]);
     }
 
-    public function product_detail(Product $product, Request $request)
+    public function product_detail(Product $product)
     {
         //$id = $request->get("id");
-        $product = Product::where("slug", $product->slug)->get();
-        $relatedProducts = Product::where("category_id", $product[0]->category_id)->where("id", '!=', $product[0]->id)->limit(4)->get();
+        $relatedProducts = Product::where("category_id", $product->category_id)->where("id", '!=', $product->id)->limit(4)->get();
         return view("product-detail", [
             "product" => $product,
             "related_products" => $relatedProducts
         ]);
     }
 
-    public function cart() {
+    public function cart()
+    {
         $products = session()->has("cart") ? session()->get("cart") : [];
         $totals = 0;
-        foreach ($products as $item){
+        foreach ($products as $item) {
             $totals += $item->price * $item->buy_qty;
         }
         return view("cart", [
@@ -88,26 +89,29 @@ class WebController extends Controller
         ]);
     }
 
-    public function addToCart(Product $product, Request $request) {
+    public function addToCart(Product $product, Request $request)
+    {
         $cart = session()->has("cart") ? session()->get("cart") : [];
         $qty = $request->has("qty") ? request()->get("qty") : 1;
-        foreach ($cart as $item){
-            if ($item->id == $product->id){
-                $item->buy_qty = $item->buy_qty+1;
-                session(["cart"=>$cart]);
+        foreach ($cart as $item) {
+            if ($item->id == $product->id) {
+                $item->buy_qty = $item->buy_qty + $qty;
+                session(["cart" => $cart]);
                 return redirect()->to("/cart");
             }
         }
 
         $product->buy_qty = $qty;
         $cart[] = $product;
-        session(["cart"=>$cart]);
+        session(["cart" => $cart]);
         return redirect()->to("/cart");
     }
-    public function checkOut() {
+
+    public function checkOut()
+    {
         $products = session()->has("cart") ? session()->get("cart") : [];
         $totals = 0;
-        foreach ($products as $item){
+        foreach ($products as $item) {
             $totals += $item->price * $item->buy_qty;
         }
         return view("check-out", [
@@ -117,7 +121,8 @@ class WebController extends Controller
 
     }
 
-    public function placeOrder(Request $request) {
+    public function placeOrder(Request $request)
+    {
         //kiểm tra validate phia backend(khoong thoa man se di ve giao dien cu)
 
         $request->validate([// mảng các quy tắt
@@ -135,37 +140,37 @@ class WebController extends Controller
 
         $products = session()->has("cart") ? session()->get("cart") : [];
         $total = 0;
-        foreach ($products as $item){
+        foreach ($products as $item) {
             $total += $item->price * $item->buy_qty;
         }
         $order = Order::create([
-            "firstname"=>$request->get("firstname"),
-            "lastname"=>$request->get("lastname"),
-            "country"=>$request->get("country"),
-            "address"=>$request->get("address"),
-            "city"=>$request->get("city"),
-            "state"=>$request->get("state"),
-            "postcode"=>$request->get("postcode"),
-            "phone"=>$request->get("phone"),
-            "email"=>$request->get("email"),
-            "total"=>$total,
-            "payment_method"=>$request->get("payment_method"),
+            "firstname" => $request->get("firstname"),
+            "lastname" => $request->get("lastname"),
+            "country" => $request->get("country"),
+            "address" => $request->get("address"),
+            "city" => $request->get("city"),
+            "state" => $request->get("state"),
+            "postcode" => $request->get("postcode"),
+            "phone" => $request->get("phone"),
+            "email" => $request->get("email"),
+            "total" => $total,
+            "payment_method" => $request->get("payment_method"),
             //"is_paid"=>false,
             //"satus"=>0,
         ]);
-        foreach ($products as $item){
+        foreach ($products as $item) {
             DB::table("order_products")->insert([
-                "order_id"=>$order->id,
-                "product_id"=>$item->id,
-                "buy_qty"=>$item->buy_qty,
-                "price"=>$item->price
+                "order_id" => $order->id,
+                "product_id" => $item->id,
+                "buy_qty" => $item->buy_qty,
+                "price" => $item->price
             ]);
         }
+
         // thanh toan bang paypal
-        if($order->payment_method == "PAYPAL") {
+        if ($order->payment_method == "PAYPAL") {
             $provider = new PayPalClient;
             $provider->setApiCredentials(config('paypal'));
-
             $paypalToken = $provider->getAccessToken();
 
             $response = $provider->createOrder([
@@ -194,30 +199,56 @@ class WebController extends Controller
                 }
 
             }
-        }else if($order->payment_method == "VNPAY"){
+        } else if ($order->payment_method == "VNPAY") {
             // thanh toan = vnpay
         }
+        // xóa giỏ hàng
+        session()->forget("cart");
         // end
-        return redirect()->to("/thank-you/".$order->id);
+        return redirect()->to("/thank-you/" . $order->id);
     }
-    public function thankYou(Order $order) {
-        $products = session()->has("cart") ? session()->get("cart") : [];
-        $totals = 0;
-        foreach ($products as $item){
-            $totals += $item->price * $item->buy_qty;
-        }
+
+    public function thankYou(Order $order)
+    {
         return view("invoice", [
-            "db" => DB::table("order_products")->where("order_id", $order->id)->get(),
-            "total" => $totals
+            "order" => $order,
+            "total" => $order->total
         ]);
     }
 
-    public function successTransaction(Order $order, Request $request) {
-        $order->update(["is_paid"=>true,"satus"=>1]);// đã thanh toán, trạng thái về xác nhận
-        return redirect()->to("/thank-you/".$order->id);
+    public function successTransaction(Order $order, Request $request)
+    {
+        $order->update(["is_paid" => true, "satus" => 1]);// đã thanh toán, trạng thái về xác nhận
+        return redirect()->to("/thank-you/" . $order->id);
     }
 
-    public function cancelTransaction(Request $request) {
+    public function cancelTransaction(Request $request)
+    {
         return "error";
     }
+
+    public function addToFavourite(Product $product)
+    {
+        $favourite = session()->has("favourite") ? session()->get("favourite") : [];
+
+        foreach ($favourite as $item) {
+            if ($item->id == $product->id) {
+
+                return redirect()->to("/favourite");
+            }
+        }
+
+        $favourite[] = $product;
+        session(["favourite" => $favourite]);
+        return redirect()->to("/favourite");
+    }
+    public function favourite()
+    {
+        $products = session()->has("favourite") ? session()->get("favourite") : [];
+        return view("favourite", [
+            "products" => $products,
+        ]);
+    }
+
+
 }
